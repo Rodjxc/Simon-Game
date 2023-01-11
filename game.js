@@ -8,8 +8,16 @@ buttonColours = ["red", "blue", "green", "yellow"];
 gamePattern = [];
 userClickedPattern = [];
 
+var started = false;
+var level = 0;
+
 function playSound(name) {
   var audio = new Audio("sounds/" + name + ".mp3");
+  audio.play();
+}
+
+function playWrongSound(){
+  var audio = new Audio("sounds/wrong.mp3");
   audio.play();
 }
 
@@ -19,7 +27,7 @@ function playSound(name) {
 function animatePress(currentColor) {
   //We add this pressed class to the button that gets clicked inside animatePress().
   $("#" + currentColor).addClass("pressed");
-
+  
   //And we remove the pressed class after a 100 milliseconds.
   setTimeout(function () {
     $("#" + currentColor).removeClass("pressed");
@@ -28,13 +36,35 @@ function animatePress(currentColor) {
 
 //Now, we create the pressed effect. Also a callback function that will be called later on.
 
+//============= Starting the game ===============
+
+//The game gets started when pressing a random key. 
+
+$(document).keypress(function() {
+  if (!started) {
+    $("#level-title").text("Level " + level);
+    nextSequence();
+    started = true;
+  }
+});
+
+
 //========================================
 
-//SECTION 2: We determine the random pattern, and the user clicks
+//SECTION 2: We determine the random pattern, and the user clicks. 
 
 //=======================================
 
 function nextSequence() {
+  // Setting the length to 0 we make sure it starts clean every time we restart the game
+
+  userClickedPattern = [];
+
+    //then, we increase the level, and change the text of the level using jQuery
+
+  level++;
+  $("#level-title").text("Level " + level);
+
   var randomNumber = Math.floor(Math.random() * 3) + 1;
 
   //This will generate a random number between 1 and 4 and save it as randomNumber
@@ -52,16 +82,17 @@ function nextSequence() {
     .fadeOut(100)
     .fadeIn(100);
 
-  //and we're going to give it a little flash when that class gets chosen.
+  //and we're going to give it a little flash when that class gets chosen and to play a sound. We use callback functions
+  //for that
+  
+  animatePress(randomChosenColour);
+
+  // now, we'll call the playSound function to play an audio based on that randomChosenColour depending on the colour chosen.
+   //That will replace the variable "name" on the playSound function
 
   playSound(randomChosenColour);
-  animatePress(randomChosenColour);
-  level++;
-  $("#level-title").text("Level " + level);
+   
 }
-
-// now, we'll call the playSound function to play an audio based on that randomChosenColour depending on the colour chosen. That will replace
-//the variable "name" on the playSound function
 
 //  ===   USER BUTTON SELECTION    ====
 
@@ -71,8 +102,9 @@ $(".btn").on("click", function () {
   console.log(userChosenColour);
   playSound(userChosenColour);
   animatePress(userChosenColour);
-  checkAnswer(userChosenColour);
-});
+  checkAnswer(userClickedPattern.length-1);
+  });
+
 
 //========================================
 
@@ -80,23 +112,43 @@ $(".btn").on("click", function () {
 
 //=======================================
 
-// $(document).keypress(nextSequence);
 
-var gameStarted = false;
+function checkAnswer(currentLevel) {
 
-$(document).keypress(function (event) {
-  if (!gameStarted) {
-    gameStarted = true;
-    $("#level-title").text("Level 0");
-    nextSequence();
-  }
-});
+  // Then we write an if statement inside checkAnswer() to check if the most recent user answer is the same as the game pattern.
+  // If so then log "success", otherwise log "wrong".
+  if (gamePattern[currentLevel] === userClickedPattern[currentLevel]) {
 
-var level = 0;
-
-function checkAnswer(currentLevel){
-  if (userChosenColour === gamePattern){
     console.log("success");
+
+    //If the user got the most recent answer right in step 3, then check that they have finished their sequence with another if statement.
+    if (userClickedPattern.length === gamePattern.length){
+
+      //5. Call nextSequence() after a 1000 millisecond delay.
+      setTimeout(function () {
+        nextSequence();
+      }, 1000);
+
+    }
+
+  } else {
+
+    console.log("wrong");
+    playWrongSound();
+    level = 0;
+    started = false;
+    $("body").addClass('game-over');  
+    setTimeout(function() {
+        $("body").removeClass('game-over');
+    }, 200)
+    $("#level-title").text("Game Over, Press Any Key to Restart");
+    startOver();
   }
-  else {console.log("wrong");}
+
+}
+
+function startOver (){
+  level = 0;
+  gamePattern = [];
+  started = false;
 }
